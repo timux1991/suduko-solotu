@@ -14,9 +14,11 @@ interface Row {
 
 interface Field {
   rows: Row[];
+  valid: boolean;
+  solved: boolean;
 }
 
-let field: Ref<Field> = ref({ rows: [] });
+let field: Ref<Field> = ref({ rows: [], valid: false, solved: false });
 let selectedRow: Ref<number | null> = ref(null);
 let selectedCol: Ref<number | null> = ref(null);
 
@@ -37,6 +39,12 @@ async function resetCell(row: number, col: number) {
 
 async function check() {
   field.value = <Field>await invoke("check", {});
+  console.log(field.value);
+}
+
+async function generateField() {
+  let numberCount = 50;
+  field.value = <Field>await invoke("generate_field", { numberCount });
   console.log(field.value);
 }
 
@@ -191,6 +199,7 @@ function onPressReset() {
     <div class="container">
       <div class="row">
         <div>
+          <div>
           <table>
             <tbody>
               <tr v-for="(row, rowIndex) in field.rows">
@@ -212,11 +221,20 @@ function onPressReset() {
           </table>
         </div>
         <div>
+          <p v-show="!field.solved">Keep on going...</p>
+          <p v-show="field.solved">It's done. You did great!</p>
+          <p v-show="!field.valid">I'd rather double check it that...</p>
+        </div>
+        </div>
+        <div>
           <form @submit.prevent="refresh">
             <button type="submit">Refresh</button>
           </form>
           <form @submit.prevent="check">
             <button type="submit">Check</button>
+          </form>
+          <form @submit.prevent="generateField">
+            <button type="submit">Generate</button>
           </form>
         </div>
       </div>

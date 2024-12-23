@@ -1,4 +1,6 @@
-use std::sync::Arc;
+use rand::Rng;
+use std::sync::Mutex;
+use std::{rc::Rc, sync::Arc};
 
 use super::sudoku_spec::{SudokuCell, SudokuField, SudokuRepo};
 
@@ -7,9 +9,15 @@ pub trait SudokuLogic {
 
     fn set_cell(&self, row: u8, col: u8, value: u8);
 
+    fn set_cell_fixed(&self, row: u8, col: u8, value: u8);
+
     fn reset_cell(&self, row: u8, col: u8);
 
     fn check(&self) -> SudokuField;
+
+    fn check_field(&self, field: Arc<Mutex<SudokuField>>) -> bool;
+
+    fn generate_field(&self, numbers: u8) -> SudokuField;
 }
 
 pub struct SudokuLogicImpl {
@@ -31,23 +39,34 @@ impl SudokuLogic for SudokuLogicImpl {
         self.sudoku_repo.set_cell(row, col, value);
     }
 
+    fn set_cell_fixed(&self, row: u8, col: u8, value: u8) {
+        self.sudoku_repo.set_cell_fixed(row, col, value);
+    }
+
     fn reset_cell(&self, row: u8, col: u8) {
         self.sudoku_repo.reset_cell(row, col);
     }
 
     fn check(&self) -> SudokuField {
-        let mut field = self.sudoku_repo.get_field();
+        let field = Arc::new(Mutex::new(self.sudoku_repo.get_field()));
+        self.check_field(field);
 
+        return self.sudoku_repo.get_field();
+    }
+
+    fn check_field(&self, field: Arc<Mutex<SudokuField>>) -> bool {
         let mut row_duplicates: [[i8; 9]; 9] = [[0; 9]; 9];
         let mut col_duplicates: [[i8; 9]; 9] = [[0; 9]; 9];
         let mut box_duplicates: [[i8; 9]; 9] = [[0; 9]; 9];
 
-        // Check if values are unique in rows
+        let mut locked_field = field.lock().unwrap();
+
+        // Check if values are unique in rows, columns and boxes
         for row_index in 0..9 {
             let mut detected_numbers: [i8; 9] = [0; 9];
             for col_index in 0..9 {
                 let box_index = (row_index / 3) * 3 + col_index / 3;
-                let cell_value: Option<u8> = field.rows[row_index].cells[col_index].value;
+                let cell_value: Option<u8> = locked_field.rows[row_index].cells[col_index].value;
                 if cell_value != None {
                     detected_numbers[(cell_value.unwrap() as usize) - 1] += 1;
                     row_duplicates[row_index][cell_value.unwrap() as usize - 1] += 1;
@@ -55,52 +74,61 @@ impl SudokuLogic for SudokuLogicImpl {
                     box_duplicates[box_index][cell_value.unwrap() as usize - 1] += 1;
                 }
             }
-
-            // for col_index in 0..9 {
-            //     let cell: &SudokuCell = &field.rows[row_index].cells[col_index];
-            //     // cell has value
-
-            //     if !cell.fixed
-            //         && cell.value != None
-            //         // && cell.value == Some(number as u8)
-            //         && detected_numbers[cell.value.unwrap() as usize - 1] > 1
-            //     {
-            //         println!(
-            //             "found invalid field at row: {}, col: {}",
-            //             row_index, col_index
-            //         );
-            //         self.sudoku_repo
-            //             .set_cell_validity(row_index as u8, col_index as u8, false);
-            //         field.rows[row_index].cells[col_index].invalid = true;
-            //     } else {
-            //         self.sudoku_repo
-            //             .set_cell_validity(row_index as u8, col_index as u8, true);
-            //         field.rows[row_index].cells[col_index].invalid = false;
-            //     }
-            // }
         }
 
+        // apply validity flags to cells
         for row_index in 0..9 {
             for col_index in 0..9 {
                 let box_index = (row_index / 3) * 3 + col_index / 3;
-                let cell: &SudokuCell = &field.rows[row_index].cells[col_index];
-                let cell_value: Option<u8> = cell.value;
+                let cell: &SudokuCell = &locked_field.rows[row_index].cells[col_index];
+                let cell_value: Option<u8> = locked_field.rows[row_index].cells[col_index].value;
                 if !cell.fixed
                     && cell.value != None
                     && (row_duplicates[row_index][cell_value.unwrap() as usize - 1] > 1
                         || col_duplicates[col_index][cell_value.unwrap() as usize - 1] > 1
                         || box_duplicates[box_index][cell_value.unwrap() as usize - 1] > 1)
                 {
-                    self.sudoku_repo
-                        .set_cell_validity(row_index as u8, col_index as u8, false);
-                    field.rows[row_index].cells[col_index].invalid = true;
+                    locked_field.rows[row_index].cells[col_index].invalid = true;
                 } else {
-                    self.sudoku_repo
-                        .set_cell_validity(row_index as u8, col_index as u8, true);
-                    field.rows[row_index].cells[col_index].invalid = false;
+                    locked_field.rows[row_index].cells[col_index].invalid = false;
                 }
             }
         }
+
+        locked_field.valid = locked_field.is_valid();
+        locked_field.solved = locked_field.is_solved();
+
+        return locked_field.valid;
+    }
+
+    fn generate_field(&self, numbers: u8) -> SudokuField {
+        // TODO: fix this as it's unlikely to generate a valid field
+        let mut rng = rand::thread_rng();
+        let mut field = SudokuField::new();
+        let mut added_numbers = 0;
+
+        while (added_numbers < numbers) {
+            let row_index = rng.gen_range(0..9);
+            let col_index = rng.gen_range(0..9);
+            let cell = &field.rows[row_index as usize].cells[col_index as usize];
+            if cell.value == None {
+                let value = rng.gen_range(1..10);
+
+                let field_candidate = Arc::new(Mutex::new(field.clone()));
+                field_candidate.lock().unwrap().rows[row_index as usize].cells
+                    [col_index as usize]
+                    .value = Some(value as u8);
+
+                if self.check_field(field_candidate) {
+                    field.rows[row_index as usize].cells[col_index as usize].value =
+                        Some(value as u8);
+                    field.rows[row_index as usize].cells[col_index as usize].fixed = true;
+                    added_numbers += 1;
+                }
+            }
+        }
+
+        self.sudoku_repo.set_field(field.clone());
 
         return field;
     }

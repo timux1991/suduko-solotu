@@ -32,6 +32,11 @@ fn check(state: State<'_, AppState>) -> SudokuField {
     state.controller.check()
 }
 
+#[tauri::command]
+fn generate_field(state: State<'_, AppState>, number_count: u8) -> SudokuField {
+    state.controller.generate_field(number_count)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let repo = Arc::new(MemSudokuRepo::new());
@@ -47,7 +52,11 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            get_field, set_cell, reset_cell, check
+            get_field,
+            set_cell,
+            reset_cell,
+            check,
+            generate_field
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

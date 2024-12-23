@@ -28,4 +28,8 @@ impl SudokuController {
     pub fn check(&self) -> SudokuField {
         self.logic.check()
     }
+
+    pub fn generate_field(&self, number_count: u8) -> SudokuField {
+        self.logic.generate_field(number_count)
+    }
 }

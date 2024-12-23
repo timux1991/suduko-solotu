@@ -26,7 +26,16 @@ impl SudokuRepo for MemSudokuRepo {
 
     fn set_cell(&self, row: u8, col: u8, value: u8) {
         let mut new_field = self.get_field();
+        if !new_field.rows[row as usize].cells[col as usize].fixed {
+            new_field.rows[row as usize].cells[col as usize].value = Some(value);
+            self.set_field(new_field);
+        }
+    }
+
+    fn set_cell_fixed(&self, row: u8, col: u8, value: u8) {
+        let mut new_field = self.get_field();
         new_field.rows[row as usize].cells[col as usize].value = Some(value);
+        new_field.rows[row as usize].cells[col as usize].fixed = true;
         self.set_field(new_field);
     }
 
@@ -38,7 +47,9 @@ impl SudokuRepo for MemSudokuRepo {
 
     fn reset_cell(&self, row: u8, col: u8) {
         let mut new_field = self.get_field();
-        new_field.rows[row as usize].cells[col as usize].value = None;
-        self.set_field(new_field);
+        if !new_field.rows[row as usize].cells[col as usize].fixed {
+            new_field.rows[row as usize].cells[col as usize].value = None;
+            self.set_field(new_field);
+        }
     }
 }

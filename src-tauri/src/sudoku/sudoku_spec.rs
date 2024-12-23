@@ -3,6 +3,8 @@ use serde::Serialize;
 #[derive(Clone, Serialize)]
 pub struct SudokuField {
     pub rows: [SudokuRow; 9],
+    pub valid: bool,
+    pub solved: bool,
 }
 
 impl SudokuField {
@@ -19,7 +21,17 @@ impl SudokuField {
                 SudokuRow::new(),
                 SudokuRow::new(),
             ],
+            valid: true,
+            solved: false,
         }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.rows.iter().all(|row| row.is_valid())
+    }
+
+    pub fn is_solved(&self) -> bool {
+        self.rows.iter().all(|row| row.is_solved())
     }
 }
 
@@ -44,6 +56,14 @@ impl SudokuRow {
             ],
         }
     }
+
+    fn is_valid(&self) -> bool {
+        self.cells.iter().all(|cell| cell.is_valid())
+    }
+
+    fn is_solved(&self) -> bool {
+        self.cells.iter().all(|cell| cell.is_solved())
+    }
 }
 
 #[derive(Clone, Serialize)]
@@ -65,6 +85,14 @@ impl SudokuCell {
             ],
         }
     }
+
+    fn is_solved(&self) -> bool {
+        self.value != None
+    }
+
+    fn is_valid(&self) -> bool {
+        !self.invalid
+    }
 }
 
 pub trait SudokuRepo {
@@ -73,6 +101,8 @@ pub trait SudokuRepo {
     fn set_field(&self, field: SudokuField);
 
     fn set_cell(&self, row: u8, col: u8, value: u8);
+
+    fn set_cell_fixed(&self, row: u8, col: u8, value: u8);
 
     fn set_cell_validity(&self, row: u8, col: u8, validity: bool);
 
