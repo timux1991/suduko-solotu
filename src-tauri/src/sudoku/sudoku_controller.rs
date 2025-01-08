@@ -21,8 +21,16 @@ impl SudokuController {
         self.logic.set_cell(row, col, value);
     }
 
+    pub fn set_cell_fixed(&self, row: u8, col: u8, value: u8) {
+        self.logic.set_cell_fixed(row, col, value);
+    }
+
     pub fn reset_cell(&self, row: u8, col: u8) {
         self.logic.reset_cell(row, col);
+    }
+
+    pub fn reset_fixed_cell(&self, row: u8, col: u8) {
+        self.logic.reset_fixed_cell(row, col);
     }
 
     pub fn check(&self) -> SudokuField {
@@ -31,5 +39,9 @@ impl SudokuController {
 
     pub fn generate_field(&self, number_count: u8) -> SudokuField {
         self.logic.generate_field(number_count)
+    }
+
+    pub fn clear_field(&self) -> SudokuField {
+        self.logic.clear_field()
     }
 }

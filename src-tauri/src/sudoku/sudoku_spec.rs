@@ -107,4 +107,6 @@ pub trait SudokuRepo {
     fn set_cell_validity(&self, row: u8, col: u8, validity: bool);
 
     fn reset_cell(&self, row: u8, col: u8);
+
+    fn reset_fixed_cell(&self, row: u8, col: u8);
 }

@@ -23,8 +23,18 @@ fn set_cell(state: State<'_, AppState>, row: u8, col: u8, value: u8) {
 }
 
 #[tauri::command]
+fn set_cell_fixed(state: State<'_, AppState>, row: u8, col: u8, value: u8) {
+    state.controller.set_cell_fixed(row, col, value);
+}
+
+#[tauri::command]
 fn reset_cell(state: State<'_, AppState>, row: u8, col: u8) {
     state.controller.reset_cell(row, col);
+}
+
+#[tauri::command]
+fn reset_fixed_cell(state: State<'_, AppState>, row: u8, col: u8) {
+    state.controller.reset_fixed_cell(row, col);
 }
 
 #[tauri::command]
@@ -35,6 +45,11 @@ fn check(state: State<'_, AppState>) -> SudokuField {
 #[tauri::command]
 fn generate_field(state: State<'_, AppState>, number_count: u8) -> SudokuField {
     state.controller.generate_field(number_count)
+}
+
+#[tauri::command]
+fn clear_field(state: State<'_, AppState>) -> SudokuField {
+    state.controller.clear_field()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -54,9 +69,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_field,
             set_cell,
+            set_cell_fixed,
             reset_cell,
+            reset_fixed_cell,
             check,
-            generate_field
+            generate_field,
+            clear_field
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

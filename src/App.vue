@@ -21,6 +21,7 @@ interface Field {
 let field: Ref<Field> = ref({ rows: [], valid: false, solved: false });
 let selectedRow: Ref<number | null> = ref(null);
 let selectedCol: Ref<number | null> = ref(null);
+let editMode: Ref<boolean> = ref(false);
 
 async function refresh() {
   field.value = <Field>await invoke("get_field", {});
@@ -28,12 +29,24 @@ async function refresh() {
 }
 
 async function setCell(row: number, col: number, value: number) {
-  await invoke("set_cell", { row, col, value });
+  if (editMode.value === true) {
+    await invoke("set_cell_fixed", { row, col, value });
+  } else {
+    await invoke("set_cell", { row, col, value });
+  }
   refresh();
+  selectedCol.value = (col + 1) % 9;
+  if (selectedCol.value === 0) {
+    selectedRow.value = (row + 1) % 9;
+  }
 }
 
 async function resetCell(row: number, col: number) {
-  await invoke("reset_cell", { row, col });
+  if (editMode.value === true) {
+    await invoke("reset_fixed_cell", { row, col });
+  } else {
+    await invoke("reset_cell", { row, col });
+  }
   refresh();
 }
 
@@ -46,6 +59,18 @@ async function generateField() {
   let numberCount = 50;
   field.value = <Field>await invoke("generate_field", { numberCount });
   console.log(field.value);
+}
+
+async function clearField() {
+  field.value = <Field>await invoke("clear_field");
+}
+
+async function enableEditMode() {
+  editMode.value = true;
+}
+
+async function disableEditMode() {
+  editMode.value = false;
 }
 
 function getCellClasses(row: number, col: number, cell: Cell) {
@@ -221,9 +246,10 @@ function onPressReset() {
           </table>
         </div>
         <div>
-          <p v-show="!field.solved">Keep on going...</p>
-          <p v-show="field.solved">It's done. You did great!</p>
-          <p v-show="!field.valid">I'd rather double check it that...</p>
+          <p v-show="editMode">Editing...</p>
+          <p v-show="!editMode && !field.solved && field.valid">Keep on going...</p>
+          <p v-show="!editMode && field.solved">Done. Well done!</p>
+          <p v-show="!editMode && !field.valid">Please double check your numbers.</p>
         </div>
         </div>
         <div>
@@ -235,6 +261,15 @@ function onPressReset() {
           </form>
           <form @submit.prevent="generateField">
             <button type="submit">Generate</button>
+          </form>
+          <form @submit.prevent="clearField">
+            <button type="submit">Clear</button>
+          </form>
+          <form @submit.prevent="enableEditMode" v-show="editMode === false">
+            <button type="submit">Edit mode</button>
+          </form>
+          <form @submit.prevent="disableEditMode" v-show="editMode === true">
+            <button type="submit">Finish edit mode</button>
           </form>
         </div>
       </div>
@@ -401,7 +436,7 @@ form {
 }
 
 .fixed-cell {
-  font-weight: bold;
+  font-weight: 800;
 }
 
 .invalid-cell {
