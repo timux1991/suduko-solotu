@@ -146,7 +146,9 @@ document.addEventListener(
     } else if (
       keyName === "0" ||
       keyName === "Backspace" ||
-      keyName === "Delete"
+      keyName === "Delete" ||
+      keyName === "d" ||
+      keyName === "r"
     ) {
       onPressReset();
     } else if (keyName === "c") {

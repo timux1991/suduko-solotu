@@ -1,6 +1,5 @@
 use rand::Rng;
-use std::sync::Mutex;
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use super::sudoku_spec::{SudokuCell, SudokuField, SudokuRepo};
 
@@ -16,7 +15,7 @@ pub trait SudokuLogic {
 
     fn check(&self) -> SudokuField;
 
-    fn check_field(&self, field: Arc<Mutex<SudokuField>>) -> Arc<Mutex<SudokuField>>;
+    fn check_field(&self, field: SudokuField) -> SudokuField;
 
     fn generate_field(&self, numbers: u8) -> SudokuField;
 
@@ -55,27 +54,25 @@ impl SudokuLogic for SudokuLogicImpl {
     }
 
     fn check(&self) -> SudokuField {
-        let field = Arc::new(Mutex::new(self.sudoku_repo.get_field()));
+        let mut field = self.sudoku_repo.get_field();
         let checked_field = self.check_field(field);
         self.sudoku_repo
-            .set_field(self.check_field(checked_field).lock().unwrap().clone());
+            .set_field(self.check_field(checked_field).clone());
 
         return self.sudoku_repo.get_field();
     }
 
-    fn check_field(&self, field: Arc<Mutex<SudokuField>>) -> Arc<Mutex<SudokuField>> {
+    fn check_field(&self, mut field: SudokuField) -> SudokuField {
         let mut row_duplicates: [[i8; 9]; 9] = [[0; 9]; 9];
         let mut col_duplicates: [[i8; 9]; 9] = [[0; 9]; 9];
         let mut box_duplicates: [[i8; 9]; 9] = [[0; 9]; 9];
-
-        let mut locked_field = field.lock().unwrap();
 
         // Check if values are unique in rows, columns and boxes
         for row_index in 0..9 {
             let mut detected_numbers: [i8; 9] = [0; 9];
             for col_index in 0..9 {
                 let box_index = (row_index / 3) * 3 + col_index / 3;
-                let cell_value: Option<u8> = locked_field.rows[row_index].cells[col_index].value;
+                let cell_value: Option<u8> = field.rows[row_index].cells[col_index].value;
                 if cell_value != None {
                     detected_numbers[(cell_value.unwrap() as usize) - 1] += 1;
                     row_duplicates[row_index][cell_value.unwrap() as usize - 1] += 1;
@@ -89,25 +86,25 @@ impl SudokuLogic for SudokuLogicImpl {
         for row_index in 0..9 {
             for col_index in 0..9 {
                 let box_index = (row_index / 3) * 3 + col_index / 3;
-                let cell: &SudokuCell = &locked_field.rows[row_index].cells[col_index];
-                let cell_value: Option<u8> = locked_field.rows[row_index].cells[col_index].value;
+                let cell: &SudokuCell = &field.rows[row_index].cells[col_index];
+                let cell_value: Option<u8> = field.rows[row_index].cells[col_index].value;
                 if !cell.fixed
                     && cell.value != None
                     && (row_duplicates[row_index][cell_value.unwrap() as usize - 1] > 1
                         || col_duplicates[col_index][cell_value.unwrap() as usize - 1] > 1
                         || box_duplicates[box_index][cell_value.unwrap() as usize - 1] > 1)
                 {
-                    locked_field.rows[row_index].cells[col_index].invalid = true;
+                    field.rows[row_index].cells[col_index].invalid = true;
                 } else {
-                    locked_field.rows[row_index].cells[col_index].invalid = false;
+                    field.rows[row_index].cells[col_index].invalid = false;
                 }
             }
         }
 
-        locked_field.valid = locked_field.is_valid();
-        locked_field.solved = locked_field.is_solved();
+        field.valid = field.is_valid();
+        field.solved = field.is_solved();
 
-        return Arc::new(Mutex::new(locked_field.clone()));
+        return field;
     }
 
     fn generate_field(&self, numbers: u8) -> SudokuField {
@@ -123,12 +120,10 @@ impl SudokuLogic for SudokuLogicImpl {
             if cell.value == None {
                 let value = rng.gen_range(1..10);
 
-                let field_candidate = Arc::new(Mutex::new(field.clone()));
-                field_candidate.lock().unwrap().rows[row_index as usize].cells
-                    [col_index as usize]
-                    .value = Some(value as u8);
+                let mut field_candidate = field.clone();
+                field_candidate.rows[row_index as usize].cells[col_index as usize].value = Some(value);
 
-                if self.check_field(field_candidate).lock().unwrap().valid {
+                if self.check_field(field_candidate).valid {
                     field.rows[row_index as usize].cells[col_index as usize].value =
                         Some(value as u8);
                     field.rows[row_index as usize].cells[col_index as usize].fixed = true;
