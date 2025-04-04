@@ -37,8 +37,8 @@ impl SudokuController {
         self.logic.check()
     }
 
-    pub fn generate_field(&self, number_count: u8) -> SudokuField {
-        self.logic.generate_field(number_count)
+    pub fn generate_field(&self) -> SudokuField {
+        self.logic.generate_field()
     }
 
     pub fn clear_field(&self) -> SudokuField {

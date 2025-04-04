@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use sudoku::generator_rest::RestSudokuGenerator;
 use sudoku::sudoku_controller::SudokuController;
 use sudoku::sudoku_core::SudokuLogicImpl;
 use sudoku::sudoku_mem::MemSudokuRepo;
@@ -43,8 +44,8 @@ fn check(state: State<'_, AppState>) -> SudokuField {
 }
 
 #[tauri::command]
-fn generate_field(state: State<'_, AppState>, number_count: u8) -> SudokuField {
-    state.controller.generate_field(number_count)
+fn generate_field(state: State<'_, AppState>) -> SudokuField {
+    state.controller.generate_field()
 }
 
 #[tauri::command]
@@ -54,8 +55,9 @@ fn clear_field(state: State<'_, AppState>) -> SudokuField {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let generator: Arc<RestSudokuGenerator> = Arc::new(RestSudokuGenerator::new());
     let repo = Arc::new(MemSudokuRepo::new());
-    let logic = Arc::new(SudokuLogicImpl::new(repo));
+    let logic = Arc::new(SudokuLogicImpl::new(repo, generator));
     let controller = Arc::new(SudokuController::new(logic));
 
     Builder::default()

@@ -56,8 +56,7 @@ async function check() {
 }
 
 async function generateField() {
-  let numberCount = 50;
-  field.value = <Field>await invoke("generate_field", { numberCount });
+  field.value = <Field>await invoke("generate_field", {});
   console.log(field.value);
 }
 

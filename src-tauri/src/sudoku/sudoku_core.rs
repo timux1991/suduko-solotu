@@ -1,7 +1,6 @@
-use rand::Rng;
 use std::sync::Arc;
 
-use super::sudoku_spec::{SudokuCell, SudokuField, SudokuRepo};
+use super::{generator_spec::SudokuGenerator, sudoku_spec::{SudokuCell, SudokuField, SudokuRepo}};
 
 pub trait SudokuLogic {
     fn get_field(&self) -> SudokuField;
@@ -17,18 +16,19 @@ pub trait SudokuLogic {
 
     fn check_field(&self, field: SudokuField) -> SudokuField;
 
-    fn generate_field(&self, numbers: u8) -> SudokuField;
+    fn generate_field(&self) -> SudokuField;
 
     fn clear_field(&self) -> SudokuField;
 }
 
 pub struct SudokuLogicImpl {
     sudoku_repo: Arc<dyn SudokuRepo + Send + Sync>,
+    generator: Arc<dyn SudokuGenerator + Send + Sync>,
 }
 
 impl SudokuLogicImpl {
-    pub fn new(sudoku_repo: Arc<impl SudokuRepo + 'static + Send + Sync>) -> SudokuLogicImpl {
-        return SudokuLogicImpl { sudoku_repo };
+    pub fn new(sudoku_repo: Arc<impl SudokuRepo + 'static + Send + Sync>, generator: Arc<impl SudokuGenerator + 'static + Send + Sync>) -> SudokuLogicImpl {
+        return SudokuLogicImpl { sudoku_repo, generator };
     }
 }
 
@@ -54,7 +54,7 @@ impl SudokuLogic for SudokuLogicImpl {
     }
 
     fn check(&self) -> SudokuField {
-        let mut field = self.sudoku_repo.get_field();
+        let field = self.sudoku_repo.get_field();
         let checked_field = self.check_field(field);
         self.sudoku_repo
             .set_field(self.check_field(checked_field).clone());
@@ -107,34 +107,17 @@ impl SudokuLogic for SudokuLogicImpl {
         return field;
     }
 
-    fn generate_field(&self, numbers: u8) -> SudokuField {
+    fn generate_field(&self) -> SudokuField {
         // TODO: fix this as it's unlikely to generate a valid field
-        let mut rng = rand::thread_rng();
-        let mut field = SudokuField::new();
-        let mut added_numbers = 0;
+        let field = self.generator.generate();
 
-        while added_numbers < numbers {
-            let row_index = rng.gen_range(0..9);
-            let col_index = rng.gen_range(0..9);
-            let cell = &field.rows[row_index as usize].cells[col_index as usize];
-            if cell.value == None {
-                let value = rng.gen_range(1..10);
-
-                let mut field_candidate = field.clone();
-                field_candidate.rows[row_index as usize].cells[col_index as usize].value = Some(value);
-
-                if self.check_field(field_candidate).valid {
-                    field.rows[row_index as usize].cells[col_index as usize].value =
-                        Some(value as u8);
-                    field.rows[row_index as usize].cells[col_index as usize].fixed = true;
-                    added_numbers += 1;
-                }
-            }
+        if field.is_some() {
+            self.sudoku_repo.set_field(field.unwrap());
+        } else {
+            self.sudoku_repo.set_field(SudokuField::new());
         }
 
-        self.sudoku_repo.set_field(field.clone());
-
-        return field;
+        return self.sudoku_repo.get_field();
     }
 
     fn clear_field(&self) -> SudokuField {
@@ -142,13 +125,4 @@ impl SudokuLogic for SudokuLogicImpl {
         return self.sudoku_repo.get_field();
     }
 
-    // fn generate_all_possible_rows(&self) {
-    //     for row_value in 123456789..987654321 {
-    //         let row = row_value.to_string();
-    //         let mut row_values: [u8; 9] = [0; 9];
-    //         for i in 0..9 {
-    //             row_values[i] = row.chars().nth(i).unwrap().to_digit(10).unwrap() as u8;
-    //         }
-    //     }
-    // }
 }
