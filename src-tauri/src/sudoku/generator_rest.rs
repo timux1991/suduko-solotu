@@ -16,6 +16,8 @@ struct NewBoard {
 #[derive(Serialize, Deserialize, Debug)]
 struct Grid {
     value: [[u8; 9]; 9],
+    solution: [[u8; 9]; 9],
+    difficulty: String,
 }
 
 pub struct RestSudokuGenerator {
@@ -39,7 +41,7 @@ impl SudokuGenerator for RestSudokuGenerator {
 
         // Make the request and handle potential errors
         let response = match client
-            .get("https://sudoku-api.vercel.app/api/dosuku?query={newboard(limit:1){grids{value,solution}}}")
+            .get("https://sudoku-api.vercel.app/api/dosuku?query={newboard(limit:1){grids{value,solution,difficulty}}}")
             .send() {
                 Ok(response) => response,
                 Err(_) => return None,
@@ -65,6 +67,7 @@ impl SudokuGenerator for RestSudokuGenerator {
                     field.rows[row_idx].cells[col_idx].fixed = if value == 0 { false } else { true };
                 }
             }
+            field.difficulty = grid.difficulty.clone();
             return Some(field);
         }
 

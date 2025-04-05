@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "sudoku-solotu",
+        "title": "Sudoku Solotu",
         "width": 800,
-        "height": 600
+        "height": 620
       }
     ],
     "security": {

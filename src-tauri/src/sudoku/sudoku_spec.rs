@@ -5,6 +5,7 @@ pub struct SudokuField {
     pub rows: [SudokuRow; 9],
     pub valid: bool,
     pub solved: bool,
+    pub difficulty: String,
 }
 
 impl SudokuField {
@@ -23,6 +24,7 @@ impl SudokuField {
             ],
             valid: true,
             solved: false,
+            difficulty: String::new(),
         }
     }
 
@@ -103,8 +105,6 @@ pub trait SudokuRepo {
     fn set_cell(&self, row: u8, col: u8, value: u8);
 
     fn set_cell_fixed(&self, row: u8, col: u8, value: u8);
-
-    // fn set_cell_validity(&self, row: u8, col: u8, validity: bool);
 
     fn reset_cell(&self, row: u8, col: u8);
 

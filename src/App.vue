@@ -16,9 +16,10 @@ interface Field {
   rows: Row[];
   valid: boolean;
   solved: boolean;
+  difficulty: string;
 }
 
-let field: Ref<Field> = ref({ rows: [], valid: false, solved: false });
+let field: Ref<Field> = ref({ rows: [], valid: false, solved: false, difficulty: "-" });
 let selectedRow: Ref<number | null> = ref(null);
 let selectedCol: Ref<number | null> = ref(null);
 let editMode: Ref<boolean> = ref(false);
@@ -223,55 +224,58 @@ function onPressReset() {
     <h1>Sudoku</h1>
 
     <div class="container">
-      <div class="row">
-        <div>
+      <div class="row g-0 text-center">
+        <div class="col-6">
           <div>
-          <table>
-            <tbody>
-              <tr v-for="(row, rowIndex) in field.rows">
-                <td
-                  v-for="(cell, colIndex) in row.cells"
-                  :class="
-                    getCellClasses(
-                      rowIndex,
-                      colIndex,
-                      field.rows[rowIndex].cells[colIndex]
-                    )
-                  "
-                  @click="selectCell(rowIndex, colIndex)"
-                >
-                  {{ cell.value === null ? " " : cell.value }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            <div>
+              <table>
+                <tbody>
+                  <tr v-for="(row, rowIndex) in field.rows">
+                    <td v-for="(cell, colIndex) in row.cells" :class="
+                        getCellClasses(
+                          rowIndex,
+                          colIndex,
+                          field.rows[rowIndex].cells[colIndex]
+                        )
+                      "
+                      @click="selectCell(rowIndex, colIndex)"
+                    >
+                      {{ cell.value === null ? " " : cell.value }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <p v-show="editMode">Editing...</p>
+              <p v-show="!editMode && !field.solved && field.valid">Keep on going...</p>
+              <p v-show="!editMode && field.solved">Done. Well done!</p>
+              <p v-show="!editMode && !field.valid">Please double check your numbers.</p>
+            </div>
+          </div>
         </div>
-        <div>
-          <p v-show="editMode">Editing...</p>
-          <p v-show="!editMode && !field.solved && field.valid">Keep on going...</p>
-          <p v-show="!editMode && field.solved">Done. Well done!</p>
-          <p v-show="!editMode && !field.valid">Please double check your numbers.</p>
-        </div>
-        </div>
-        <div>
-          <form @submit.prevent="refresh">
-            <button type="submit">Refresh</button>
-          </form>
-          <form @submit.prevent="check">
-            <button type="submit">Check</button>
-          </form>
-          <form @submit.prevent="generateField">
-            <button type="submit">Generate</button>
-          </form>
-          <form @submit.prevent="clearField">
-            <button type="submit">Clear</button>
-          </form>
-          <form @submit.prevent="enableEditMode" v-show="editMode === false">
-            <button type="submit">Edit mode</button>
-          </form>
-          <form @submit.prevent="disableEditMode" v-show="editMode === true">
-            <button type="submit">Finish edit mode</button>
-          </form>
+        <div class="col-4 text-center">
+          <div class="ms-3">
+            <form @submit.prevent="refresh">
+              <button type="submit">Refresh</button>
+            </form>
+            <form @submit.prevent="check">
+              <button type="submit">Check</button>
+            </form>
+            <form @submit.prevent="generateField">
+              <button type="submit">Generate</button>
+            </form>
+            <form @submit.prevent="clearField">
+              <button type="submit">Clear</button>
+            </form>
+            <form @submit.prevent="enableEditMode" v-show="editMode === false">
+              <button type="submit">Edit mode</button>
+            </form>
+            <form @submit.prevent="disableEditMode" v-show="editMode === true">
+              <button type="submit">Finish edit mode</button>
+            </form>
+            <p>Difficulty: {{ field.difficulty }}</p>
+          </div>
         </div>
       </div>
     </div>

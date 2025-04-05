@@ -39,12 +39,6 @@ impl SudokuRepo for MemSudokuRepo {
         self.set_field(new_field);
     }
 
-    // fn set_cell_validity(&self, row: u8, col: u8, validity: bool) {
-    //     let mut new_field = self.get_field();
-    //     new_field.rows[row as usize].cells[col as usize].invalid = !validity;
-    //     self.set_field(new_field);
-    // }
-
     fn reset_cell(&self, row: u8, col: u8) {
         let mut new_field = self.get_field();
         if !new_field.rows[row as usize].cells[col as usize].fixed {
